@@ -195,6 +195,47 @@ app.post('/articles/delete/:id', (req, res) => {
     });
 });
 
+// Route untuk menampilkan formulir edit artikel
+app.get('/articles/edit/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'SELECT * FROM articles WHERE id = ?';
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Article not found' });
+        }
+        res.render('edit-article', { title: 'Edit Article', article: result[0] });
+    });
+});
+
+// Route untuk memproses edit artikel
+app.post('/articles/edit/:id', upload.single('image_url'), (req, res) => {
+    const { id } = req.params;
+    const { title, content } = req.body;
+    const image = req.file ? req.file.filename : null; // Mendapatkan nama file gambar jika diupload
+
+    // Jika gambar diupload, update query dengan gambar baru
+    let sql = 'UPDATE articles SET title = ?, content = ?';
+    const values = [title, content];
+
+    if (image) {
+        sql += ', image_url = ?';
+        values.push(image);
+    }
+    
+    sql += ' WHERE id = ?';
+    values.push(id);
+
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.redirect('/articles'); // Redirect ke daftar artikel setelah berhasil diedit
+    });
+});
+
 // Start Server 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`); 
